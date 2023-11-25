@@ -1,0 +1,16 @@
+<div id='product'>
+    <div class='row' id='product-list'></div>
+</div>
+
+<script>
+    pageTitle.innerHTML = 'Products';
+
+    showProducts();
+
+    function showProducts() {
+        const productList = document.getElementById('product-list');
+
+        for (var item of getSessionProducts())
+            productList.innerHTML += displayProductCard(item);
+    }
+</script>

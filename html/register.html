@@ -1,0 +1,86 @@
+<div class='d-flex justify-content-center' id='register'>
+    <form class='col-12 col-md-6' id='frm-register'>
+        <div class='form-floating mt-3'>
+            <input type='text' class='form-control' id='frm-register-first-name' placeholder='First Name'>
+            <label for='frm-register-first-name'>First Name</label>
+        </div>
+
+        <div class='form-floating mt-3'>
+            <input type='text' class='form-control' id='frm-register-last-name' placeholder='Last Name'>
+            <label for='frm-register-last-name'>Last Name</label>
+        </div>
+
+        <div class='form-floating mt-3'>
+            <input type='email' class='form-control' id='frm-register-email' placeholder='Email' required>
+            <label for='frm-register-email'>Email *</label>
+        </div>
+
+        <div class='form-floating mt-3'>
+            <input type='password' class='form-control' id='frm-register-password' placeholder='Password' required>
+            <label for='frm-register-password'>Password *</label>
+        </div>
+
+        <div class='form-floating mt-3'>
+            <input type='password' class='form-control' id='frm-register-password-confirm'
+                placeholder='Confirm Password' required>
+            <label for='frm-register-password-confirm'>Confirm Password *</label>
+        </div>
+
+        <div class='mt-3'>
+            <a href='#' id='link-login'>Already had account?</a>
+        </div>
+
+        <div class='text-center mt-3'>
+            <button class='btn btn-success' type='submit'>
+                Register
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    pageTitle.innerHTML = 'Register';
+
+    $('#frm-register').submit(register);
+    $('#link-login').on('click', navigate);
+
+    function register(event) {
+        event.preventDefault();
+
+        const formRegisterFirstName = document.getElementById('frm-register-first-name');
+        const formRegisterLastName = document.getElementById('frm-register-last-name');
+        const formRegisterEmail = document.getElementById('frm-register-email');
+        const formRegisterPassword = document.getElementById('frm-register-password');
+        const formRegisterPasswordConfirm = document.getElementById('frm-register-password-confirm');
+
+        const email = formRegisterEmail.value;
+        const password = formRegisterPassword.value;
+        const passwordConfirm = formRegisterPasswordConfirm.value;
+
+        if (password !== passwordConfirm) {
+            alert('Passwords do not match!');
+            return;
+        }
+
+        var accounts = getSessionAccounts();
+        const emailExists = accounts.some(item => item.email === email);
+
+        if (emailExists) {
+            alert('This email is already registered. Please use a different email.');
+            return;
+        }
+
+        const account = {
+            'first_name': formRegisterFirstName.value,
+            'last_name': formRegisterLastName.value,
+            'email': email,
+            'password': password,
+        };
+
+        accounts.push(account);
+        setSessionAccounts(accounts)
+
+        alert('Registration successful! You can now log in.');
+        loadPage('login');
+    }
+</script>

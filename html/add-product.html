@@ -1,0 +1,66 @@
+<div class='d-flex justify-content-center' id='add-product'>
+    <form class='col-12 col-md-6' id='frm-add-product'>
+        <div class='form-floating mt-3'>
+            <input type='text' class='form-control' id='frm-add-product-name' placeholder='Product Name' required>
+            <label for='frm-add-product-name'>Product Name *</label>
+        </div>
+
+        <div class='form-floating mt-3'>
+            <input type='text' class='form-control' id='frm-add-product-description' placeholder='Product Description'>
+            <label for='frm-add-product-description'>Product Description</label>
+        </div>
+
+        <div class='form-floating mt-3'>
+            <input type='number' class='form-control' id='frm-add-product-price' placeholder='Price' required>
+            <label for='frm-add-product-price'>Price *</label>
+        </div>
+
+        <div class='form-floating mt-3'>
+            <input type='url' class='form-control' id='frm-add-product-image' placeholder='Image' required>
+            <label for='frm-add-product-image'>Image *</label>
+        </div>
+
+        <div class='text-center mt-3'>
+            <button class='btn btn-success' type='submit'>
+                Add Product
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    pageTitle.innerHTML = 'Add Product';
+
+    $('#frm-add-product').submit(addProduct);
+
+    function addProduct(event) {
+        event.preventDefault();
+
+        var products = getSessionProducts();
+
+        const product = getNewProduct();
+        product.id = products.length + 1;
+
+        products.push(product);
+        setSessionProducts(products);
+
+        alert('Successfully add a new product.');
+
+        $('#frm-add-product').trigger('reset');
+    }
+
+    function getNewProduct() {
+        const name = document.getElementById('frm-add-product-name');
+        const price = document.getElementById('frm-add-product-price');
+        const image = document.getElementById('frm-add-product-image');
+        const description = document.getElementById('frm-add-product-description');
+
+        return product = {
+            'id': -1,
+            'name': name.value,
+            'price': Number(price.value),
+            'image': image.value,
+            'description': description.value,
+        };
+    }
+</script>
