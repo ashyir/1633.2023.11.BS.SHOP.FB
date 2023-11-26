@@ -10,7 +10,7 @@ function displayMenu() {
 
     // Add 'click' event to all menu items.
     const excludedItems = ['menu-cart-total', 'menu-logout'];
-    var menuItems = document.querySelectorAll(`[id^='menu-']`);
+    let menuItems = document.querySelectorAll(`[id^='menu-']`);
     menuItems = Array.from(menuItems).filter(element => !excludedItems.includes(element.id));
 
     for (let item of menuItems)

@@ -67,15 +67,12 @@
                 loadPage('login');
             })
             .catch((error) => {
-                switch (error.code) {
-                    case 'auth/email-already-in-use':
-                        displayValidationError(validationId, 'This email is already registered. Please use a different email.');
-                        break;
-
-                    default:
-                        displayValidationError(validationId, 'Registration failed! Please try again.');
-                        break;
+                if (error.code === 'auth/email-already-in-use') {
+                    displayValidationError(validationId, 'This email is already registered. Please use a different email.');
+                    return;
                 }
+
+                displayValidationError(validationId, 'Registration failed! Please try again.');
             });
     }
 
@@ -85,7 +82,7 @@
         const passwordInput = document.getElementById('frm-register-password');
         const displayNameInput = document.getElementById('frm-register-display-name');
 
-        return user = {
+        return {
             email: emailInput.value,
             password: passwordInput.value,
             displayName: displayNameInput.value,

@@ -64,7 +64,7 @@ function dbAddProduct(product) {
             .then(() => { resolve(true); })
             .catch((error) => {
                 console.error('Error adding product:', error);
-                reject(false);
+                reject(error);
             });
     });
 }
@@ -100,17 +100,115 @@ function dbAuthenticate(email, password) {
     });
 }
 
-/*
-function getSessionCarts() {
-    return JSON.parse(sessionStorage.getItem(sessionCarts)) || [];
+function dbSignOut() {
+    return new Promise((resolve, reject) => {
+        firebase.auth()
+            .signOut()
+            .then(() => { resolve(true); })
+            .catch((error) => {
+                console.error('Sign out failed:', error);
+                reject(error);
+            });
+    });
 }
 
-function setSessionCarts(carts) {
-    sessionStorage.setItem(sessionCarts, JSON.stringify(carts));
+function dbInitializeCart(userId) {
+    return new Promise((resolve, reject) => {
+        db.collection(dbCartName)
+            .doc(userId)
+            .set({ products: [] })
+            .then(() => { resolve(true); })
+            .catch((error) => {
+                console.error('Error initializing cart:', error);
+                reject(error);
+            });
+    });
 }
 
-function getSessionCart(email) {
-    const carts = getSessionCarts();
-    return carts.find((item) => item.email === email);
+function dbGetCartItems(userId) {
+    return new Promise((resolve, reject) => {
+        db.collection(dbCartName)
+            .doc(userId)
+            .get()
+            .then((doc) => {
+                if (doc.exists) { resolve(doc.data().products); }
+                else { resolve([]); }
+            })
+            .catch((error) => {
+                console.error('Error getting cart items:', error);
+                reject(error);
+            });
+    });
 }
-*/
+
+function dbAddCartItem(userId, cartItem) {
+    return new Promise((resolve, reject) => {
+        db.collection(dbCartName)
+            .doc(userId)
+            .update({
+                products: firebase.firestore.FieldValue.arrayUnion(cartItem),
+            })
+            .then(() => { resolve(true); })
+            .catch((error) => {
+                console.error('Error adding cart item:', error);
+                reject(error);
+            });
+    });
+}
+
+function dbRemoveCartItem(userId, cartItem) {
+    return new Promise((resolve, reject) => {
+        db.collection(dbCartName)
+            .doc(userId)
+            .update({
+                products: firebase.firestore.FieldValue.arrayRemove(cartItem),
+            })
+            .then(() => { resolve(true); })
+            .catch((error) => {
+                console.error('Error removing cart item:', error);
+                reject(error);
+            });
+    });
+}
+
+function dbUpdateCartItem(userId, cartItem) {
+    return new Promise((resolve, reject) => {
+        db.collection(dbCartName)
+            .doc(userId)
+            .update({
+                products: firebase.firestore.FieldValue.arrayRemove(cartItem),
+            })
+            .then(() => {
+                db.collection(dbCartName)
+                    .doc(userId)
+                    .update({
+                        products: firebase.firestore.FieldValue.arrayUnion(cartItem),
+                    })
+                    .then(() => { resolve(true); })
+                    .catch((error) => {
+                        console.error('Error updating cart item:', error);
+                        reject(error);
+                    });
+            })
+            .catch((error) => {
+                console.error('Error updating cart item:', error);
+                reject(error);
+            });
+    });
+}
+
+function dbGetCartQuantity(userId) {
+    return new Promise((resolve, reject) => {
+        db.collection(dbCartName)
+            .doc(userId)
+            .get()
+            .then((doc) => {
+                if (doc.exists) { resolve(doc.data().products.length); }
+                else { resolve(0); }
+            })
+            .catch((error) => {
+                console.error('Error getting cart quantity:', error);
+                reject(error);
+            });
+    });
+}

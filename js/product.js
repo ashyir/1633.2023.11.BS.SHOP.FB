@@ -4,7 +4,7 @@ function displayProducts(element, products) {
         return;
     }
 
-    for (var product of products)
+    for (let product of products)
         element.innerHTML += displayProductCard(product);
 }
 
