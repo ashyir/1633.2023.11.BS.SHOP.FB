@@ -1,14 +1,6 @@
 <div class='d-flex justify-content-center' id='register'>
     <form class='col-12 col-md-6' id='frm-register'>
-        <div class='form-floating mt-3'>
-            <input type='text' class='form-control' id='frm-register-first-name' placeholder='First Name'>
-            <label for='frm-register-first-name'>First Name</label>
-        </div>
-
-        <div class='form-floating mt-3'>
-            <input type='text' class='form-control' id='frm-register-last-name' placeholder='Last Name'>
-            <label for='frm-register-last-name'>Last Name</label>
-        </div>
+        <div class='mt-3' id='frm-register-validation'></div>
 
         <div class='form-floating mt-3'>
             <input type='email' class='form-control' id='frm-register-email' placeholder='Email' required>
@@ -16,7 +8,8 @@
         </div>
 
         <div class='form-floating mt-3'>
-            <input type='password' class='form-control' id='frm-register-password' placeholder='Password' required>
+            <input type='password' class='form-control' id='frm-register-password' placeholder='Password' minlength='6'
+                required>
             <label for='frm-register-password'>Password *</label>
         </div>
 
@@ -24,6 +17,16 @@
             <input type='password' class='form-control' id='frm-register-password-confirm'
                 placeholder='Confirm Password' required>
             <label for='frm-register-password-confirm'>Confirm Password *</label>
+        </div>
+
+        <div class='form-floating mt-3'>
+            <input type='text' class='form-control' id='frm-register-display-name' placeholder='Display Name'>
+            <label for='frm-register-display-name'>Display Name</label>
+        </div>
+
+        <div class='form-floating mt-3'>
+            <input type='url' class='form-control' id='frm-register-photo' placeholder='Profile Photo'>
+            <label for='frm-register-photo'>Profile Photo</label>
         </div>
 
         <div class='mt-3'>
@@ -44,43 +47,49 @@
     $('#frm-register').submit(register);
     $('#link-login').on('click', navigate);
 
-    function register(event) {
+    async function register(event) {
         event.preventDefault();
 
-        const formRegisterFirstName = document.getElementById('frm-register-first-name');
-        const formRegisterLastName = document.getElementById('frm-register-last-name');
-        const formRegisterEmail = document.getElementById('frm-register-email');
-        const formRegisterPassword = document.getElementById('frm-register-password');
-        const formRegisterPasswordConfirm = document.getElementById('frm-register-password-confirm');
+        const validationId = 'frm-register-validation';
+        const user = getInputUser();
 
-        const email = formRegisterEmail.value;
-        const password = formRegisterPassword.value;
-        const passwordConfirm = formRegisterPasswordConfirm.value;
+        const passwordConfirmInput = document.getElementById('frm-register-password-confirm');
+        const passwordConfirm = passwordConfirmInput.value;
 
-        if (password !== passwordConfirm) {
-            alert('Passwords do not match!');
+        if (user.password !== passwordConfirm) {
+            displayValidationError(validationId, 'Passwords do not match!');
             return;
         }
 
-        var accounts = getSessionAccounts();
-        const emailExists = accounts.some(item => item.email === email);
+        await dbAddUser(user)
+            .then((user) => {
+                alert('Registration successful! You can now log in.');
+                loadPage('login');
+            })
+            .catch((error) => {
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        displayValidationError(validationId, 'This email is already registered. Please use a different email.');
+                        break;
 
-        if (emailExists) {
-            alert('This email is already registered. Please use a different email.');
-            return;
-        }
+                    default:
+                        displayValidationError(validationId, 'Registration failed! Please try again.');
+                        break;
+                }
+            });
+    }
 
-        const account = {
-            'first_name': formRegisterFirstName.value,
-            'last_name': formRegisterLastName.value,
-            'email': email,
-            'password': password,
+    function getInputUser() {
+        const photoInput = document.getElementById('frm-register-photo');
+        const emailInput = document.getElementById('frm-register-email');
+        const passwordInput = document.getElementById('frm-register-password');
+        const displayNameInput = document.getElementById('frm-register-display-name');
+
+        return user = {
+            email: emailInput.value,
+            password: passwordInput.value,
+            displayName: displayNameInput.value,
+            photoURL: photoInput.value,
         };
-
-        accounts.push(account);
-        setSessionAccounts(accounts)
-
-        alert('Registration successful! You can now log in.');
-        loadPage('login');
     }
 </script>

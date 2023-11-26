@@ -1,5 +1,7 @@
 <div class='d-flex justify-content-center' id='login'>
     <form class='col-12 col-md-6' id='frm-login'>
+        <div class='mt-3' id='frm-login-validation'></div>
+
         <div class='form-floating mt-3'>
             <input type='email' class='form-control' id='frm-login-email' placeholder='Email' required>
             <label for='frm-login-email' id='lbl-email'>Email *</label>
@@ -30,25 +32,25 @@
     $('#frm-login').submit(login);
     $('#link-register').on('click', navigate);
 
-    function login(event) {
+    async function login(event) {
         event.preventDefault();
+
+        const validationId = 'frm-login-validation';
 
         const email = document.getElementById('frm-login-email').value;
         const password = document.getElementById('frm-login-password').value;
 
-        const isLoginSuccess = authenticate(email, password);
+        await dbAuthenticate(email, password)
+            .then((user) => {
+                hideLoginMenu();
+                setSessionLoginUser(user);
+                //displayMenuCartTotal();
 
-        if (!isLoginSuccess) {
-            alert('Login fail.');
-            return;
-        }
-
-        hideLoginMenu();
-        loadPage('product');
-        setSessionLoginEmail(email);
-
-        displayMenuCartTotal();
-
-        alert('Login success.');
+                alert('Login success.');
+                loadPage('product');
+            })
+            .catch((error) => {
+                displayValidationError(validationId, 'Login fail.');
+            });
     }
 </script>

@@ -28,18 +28,16 @@
     <!-- End Carousel -->
 
     <!-- Popular Products -->
-    <div class='fs-1 mt-5'>
+    <div class='fs-1 mt-5 mb-3 border-bottom border-success text-success'>
         Popular Products
-        <hr>
     </div>
 
     <div class='row' id='popular-product-list'></div>
     <!-- End Popular Products -->
 
     <!-- New Arrivals -->
-    <div class='fs-1 mt-5'>
+    <div class='fs-1 mt-5 mb-3 border-bottom border-success text-success'>
         New Arrivals
-        <hr>
     </div>
 
     <div class='row' id='new-arrival-product-list'></div>
@@ -49,24 +47,28 @@
 <script>
     pageTitle.innerHTML = 'Home';
 
-    showProducts();
+    showPopularProducts();
+    showNewArrivalProducts();
 
-    function showProducts() {
-        showPopularProducts();
-        showNewArrivalProducts();
-    }
-
-    function showPopularProducts() {
+    async function showPopularProducts() {
         const productList = document.getElementById('popular-product-list');
 
-        for (var item of getSessionProducts())
-            productList.innerHTML += displayProductCard(item);
+        try {
+            const products = await dbGetProducts();
+            displayProducts(productList, products);
+        } catch (error) {
+            productList.innerHTML = '<div>Please check your connection.</div>'
+        }
     }
 
-    function showNewArrivalProducts() {
+    async function showNewArrivalProducts() {
         const productList = document.getElementById('new-arrival-product-list');
 
-        for (var item of getSessionProducts())
-            productList.innerHTML += displayProductCard(item);
+        try {
+            const products = await dbGetProducts();
+            displayProducts(productList, products);
+        } catch (error) {
+            productList.innerHTML = '<div>Please check your connection.</div>'
+        }
     }
 </script>

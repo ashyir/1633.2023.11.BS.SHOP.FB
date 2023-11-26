@@ -5,12 +5,16 @@
 <script>
     pageTitle.innerHTML = 'Products';
 
-    showProducts();
+    showAllProducts();
 
-    function showProducts() {
+    async function showAllProducts() {
         const productList = document.getElementById('product-list');
 
-        for (var item of getSessionProducts())
-            productList.innerHTML += displayProductCard(item);
+        try {
+            const products = await dbGetProducts();
+            displayProducts(productList, products);
+        } catch (error) {
+            productList.innerHTML = '<div>Please check your connection.</div>'
+        }
     }
 </script>
