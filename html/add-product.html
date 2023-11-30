@@ -41,14 +41,15 @@
         const validationId = 'frm-add-product-validation';
         const product = getInputProduct();
 
-        await dbAddProduct(product)
-            .then((success) => {
-                displayValidationSuccess(validationId, 'Successfully add a new product.');
-                $('#frm-add-product').trigger('reset');
-            })
-            .catch((error) => {
-                displayValidationError(validationId, 'Cannot add a new product.');
-            });
+        const isProductAdded = await dbAddProduct(product);
+
+        if (isProductAdded) {
+            displayValidationSuccess(validationId, 'Successfully add a new product.');
+            $('#frm-add-product').trigger('reset');
+            return;
+        }
+
+        displayValidationError(validationId, 'Cannot add a new product.');
     }
 
     function getInputProduct() {

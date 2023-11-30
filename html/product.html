@@ -9,12 +9,8 @@
 
     async function showAllProducts() {
         const productList = document.getElementById('product-list');
+        const products = await dbGetProducts();
 
-        try {
-            const products = await dbGetProducts();
-            displayProducts(productList, products);
-        } catch (error) {
-            productList.innerHTML = '<div>Please check your connection.</div>'
-        }
+        displayProducts(productList, products);
     }
 </script>

@@ -28,25 +28,26 @@
 <script>
     pageTitle.innerHTML = 'Cart';
 
-    //showCart();
+    showCart();
 
-    function showCart() {
+    async function showCart() {
         setCartValues('No product.', 0, 0);
 
-        const email = getSessionLoginEmail();
-        if (!email) {
+        const userId = getSessionLoginUserId();
+        if (!userId) {
             alert('Please login to see your cart.');
             return;
         }
 
-        const cart = getSessionCart(email);
-        if (!cart || cart.items.length === 0) return;
+        const cartItems = await dbGetCartItems(userId);
+
+        if (cartItems.length === 0) { return; }
 
         let cartListValue = '';
         let cartTotalValue = 0;
 
-        for (let cartItem of cart.items) {
-            const product = getSessionProduct(cartItem.product_id);
+        for (const cartItem of cartItems) {
+            const product = await dbGetProduct(cartItem.productId);
 
             if (product) {
                 cartListValue += displayCartItem(cartItem, product);
@@ -57,9 +58,16 @@
         setCartValues(cartListValue, cartTotalValue, 20000);
     }
 
+    function removeCartItem(productId) {
+        const cartList = document.getElementById('cart-list');
+        const cartItem = document.getElementById(`cart-item-${productId}`);
+
+        cartList.removeChild(cartItem);
+    }
+
     function displayCartItem(cartItem, product) {
         return `
-        <div class='card mt-3 p-3 bg-light border-light'>
+        <div class='card mt-3 p-3 bg-light border-light' id='cart-item-${product.id}'>
             <div class='row align-items-center'>
                 <div style='width: 75px;'>
                     <img src='${product.image}' class='rounded' alt='${product.name} Image' height='75px' width='75px' style='object-fit: cover;'>
@@ -80,13 +88,13 @@
 
                                 <div class='col-6 col-md-12 d-flex justify-content-end'>
                                     <div class='input-group input-group-sm' style='width: 95px;'>
-                                        <button class='input-group-text' style='width: 25px;' onclick='decreaseQuantity(${product.id});'>
+                                        <button class='input-group-text' style='width: 25px;' onclick='decreaseQuantity("${product.id}");'>
                                             -
                                         </button>
 
-                                        <input type='number' class='form-control text-center' value='${cartItem.quantity}' readonly>
+                                        <input type='number' class='form-control text-center' value='${cartItem.quantity}' id='cart-item-quantity-${product.id}' readonly>
 
-                                        <button class='input-group-text' style='width: 25px;' onclick='increaseQuantity(${product.id});'>
+                                        <button class='input-group-text' style='width: 25px;' onclick='increaseQuantity("${product.id}");'>
                                             +
                                         </button>
                                     </div>
@@ -121,19 +129,48 @@
     }
 
     function changeQuantity(productId, value) {
-        let carts = getSessionCarts();
-        const email = getSessionLoginEmail();
-        const cartIndex = carts.findIndex((item) => item.email === email);
-        const cartItems = carts[cartIndex].items;
-        const productIndex = cartItems.findIndex((item) => item.product_id === productId);
+        const quantityInput = document.getElementById(`cart-item-quantity-${productId}`);
 
-        carts[cartIndex].items[productIndex].quantity += value;
+        const userId = getSessionLoginUserId();
+        const oldQuantity = parseInt(quantityInput.value);
+        const newQuantity = oldQuantity + value;
 
-        if (carts[cartIndex].items[productIndex].quantity === 0)
-            carts[cartIndex].items.splice(productIndex, 1);
+        const oldCartItem = {
+            productId: productId,
+            quantity: oldQuantity,
+        };
 
-        setSessionCarts(carts);
-        displayMenuCartTotal();
-        showCart();
+        const newCartItem = {
+            productId: productId,
+            quantity: newQuantity,
+        };
+
+        if (newQuantity === 0) {
+            const isDeleteConfirm = confirm('Are you sure you want to remove this product from your cart?');
+
+            if (!isDeleteConfirm)
+                return;
+
+            const isRemoved = dbRemoveCartItem(userId, oldCartItem);
+
+            if (isRemoved) {
+                changeMenuCartTotal(value);
+                removeCartItem(productId);
+                return;
+            }
+
+            alert('Failed to remove product. Please try again.');
+            return;
+        }
+
+        const isCartItemUpdated = dbChangeCartItemQuantity(userId, oldCartItem, newCartItem);
+
+        if (isCartItemUpdated) {
+            changeMenuCartTotal(value);
+            quantityInput.value = newQuantity;
+            return;
+        }
+
+        alert('Failed to change quantity. Please try again.');
     }
 </script>

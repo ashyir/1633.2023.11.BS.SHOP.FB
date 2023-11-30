@@ -19,6 +19,11 @@ function getSessionLoginUser() {
     return JSON.parse(sessionStorage.getItem(sessionLoginUser));
 }
 
+function getSessionLoginUserId() {
+    const user = getSessionLoginUser();
+    return user ? user.uid : null;
+}
+
 function setSessionLoginUser(user) {
     sessionStorage.setItem(sessionLoginUser, JSON.stringify(user));
 }
@@ -28,17 +33,17 @@ function removeSessionLoginUser() {
 }
 
 function dbGetProducts() {
+    const products = [];
+
     return new Promise((resolve, reject) => {
         db.collection(dbProductName)
             .get()
             .then((querySnapshot) => {
-                const products = [];
-
-                querySnapshot.forEach((doc) => {
-                    const productData = doc.data();
+                querySnapshot.forEach((document) => {
+                    const productData = document.data();
 
                     const product = {
-                        id: doc.id,
+                        id: document.id,
                         name: productData.name,
                         price: productData.price,
                         image: productData.image,
@@ -52,7 +57,36 @@ function dbGetProducts() {
             })
             .catch((error) => {
                 console.error('Error getting products:', error);
-                reject(error);
+                resolve(products);
+            });
+    });
+}
+
+function dbGetProduct(productId) {
+    let product = null;
+
+    return new Promise((resolve, reject) => {
+        db.collection(dbProductName)
+            .doc(productId)
+            .get()
+            .then((document) => {
+                if (document.exists) {
+                    const productData = document.data();
+
+                    product = {
+                        id: document.id,
+                        name: productData.name,
+                        price: productData.price,
+                        image: productData.image,
+                        description: productData.description,
+                    };
+                }
+
+                resolve(product);
+            })
+            .catch((error) => {
+                console.error('Error getting product:', error);
+                resolve(product);
             });
     });
 }
@@ -64,7 +98,7 @@ function dbAddProduct(product) {
             .then(() => { resolve(true); })
             .catch((error) => {
                 console.error('Error adding product:', error);
-                reject(error);
+                resolve(false);
             });
     });
 }
@@ -78,6 +112,8 @@ function dbAddUser(user) {
                     displayName: user.displayName,
                     photoURL: user.photoURL,
                 });
+
+                dbInitializeCart(userCredential.user.uid);
 
                 resolve(userCredential.user);
             })
@@ -107,7 +143,7 @@ function dbSignOut() {
             .then(() => { resolve(true); })
             .catch((error) => {
                 console.error('Sign out failed:', error);
-                reject(error);
+                resolve(false);
             });
     });
 }
@@ -116,27 +152,54 @@ function dbInitializeCart(userId) {
     return new Promise((resolve, reject) => {
         db.collection(dbCartName)
             .doc(userId)
-            .set({ products: [] })
+            .set({
+                totalQuantity: 0,
+                products: [],
+            })
             .then(() => { resolve(true); })
             .catch((error) => {
                 console.error('Error initializing cart:', error);
-                reject(error);
+                resolve(false);
             });
     });
 }
 
 function dbGetCartItems(userId) {
+    let cartItems = [];
+
     return new Promise((resolve, reject) => {
         db.collection(dbCartName)
             .doc(userId)
             .get()
-            .then((doc) => {
-                if (doc.exists) { resolve(doc.data().products); }
-                else { resolve([]); }
+            .then((document) => {
+                if (document.exists)
+                    cartItems = document.data().products;
+
+                resolve(cartItems);
             })
             .catch((error) => {
                 console.error('Error getting cart items:', error);
-                reject(error);
+                resolve(cartItems);
+            });
+    });
+}
+
+function dbGetCartItem(userId, productId) {
+    let cartItem = null;
+
+    return new Promise((resolve, reject) => {
+        db.collection(dbCartName)
+            .doc(userId)
+            .get()
+            .then((cart) => {
+                if (cart.exists)
+                    cartItem = cart.data().products.find((item) => item.productId === productId);
+
+                resolve(cartItem);
+            })
+            .catch((error) => {
+                console.error('Error getting cart item:', error);
+                resolve(cartItem);
             });
     });
 }
@@ -146,12 +209,13 @@ function dbAddCartItem(userId, cartItem) {
         db.collection(dbCartName)
             .doc(userId)
             .update({
+                totalQuantity: firebase.firestore.FieldValue.increment(cartItem.quantity),
                 products: firebase.firestore.FieldValue.arrayUnion(cartItem),
             })
             .then(() => { resolve(true); })
             .catch((error) => {
                 console.error('Error adding cart item:', error);
-                reject(error);
+                resolve(false);
             });
     });
 }
@@ -161,54 +225,42 @@ function dbRemoveCartItem(userId, cartItem) {
         db.collection(dbCartName)
             .doc(userId)
             .update({
+                totalQuantity: firebase.firestore.FieldValue.increment(-cartItem.quantity),
                 products: firebase.firestore.FieldValue.arrayRemove(cartItem),
             })
             .then(() => { resolve(true); })
             .catch((error) => {
                 console.error('Error removing cart item:', error);
-                reject(error);
+                resolve(false);
             });
     });
 }
 
-function dbUpdateCartItem(userId, cartItem) {
-    return new Promise((resolve, reject) => {
-        db.collection(dbCartName)
-            .doc(userId)
-            .update({
-                products: firebase.firestore.FieldValue.arrayRemove(cartItem),
-            })
-            .then(() => {
-                db.collection(dbCartName)
-                    .doc(userId)
-                    .update({
-                        products: firebase.firestore.FieldValue.arrayUnion(cartItem),
-                    })
-                    .then(() => { resolve(true); })
-                    .catch((error) => {
-                        console.error('Error updating cart item:', error);
-                        reject(error);
-                    });
-            })
-            .catch((error) => {
-                console.error('Error updating cart item:', error);
-                reject(error);
-            });
-    });
+function dbChangeCartItemQuantity(userId, oldCartItem, newCartItem) {
+    const isRemoved = dbRemoveCartItem(userId, oldCartItem);
+
+    if (isRemoved)
+        return dbAddCartItem(userId, newCartItem);
+
+    return Promise.resolve(false);
 }
 
 function dbGetCartQuantity(userId) {
+    let totalQuantity = 0;
+
     return new Promise((resolve, reject) => {
         db.collection(dbCartName)
             .doc(userId)
             .get()
-            .then((doc) => {
-                if (doc.exists) { resolve(doc.data().products.length); }
-                else { resolve(0); }
+            .then((cart) => {
+                if (cart.exists)
+                    totalQuantity = cart.data().totalQuantity;
+
+                resolve(totalQuantity);
             })
             .catch((error) => {
                 console.error('Error getting cart quantity:', error);
-                reject(error);
+                resolve(totalQuantity);
             });
     });
 }
